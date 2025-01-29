@@ -1,0 +1,11 @@
+<html>
+    <h2>Variable</h2>
+    <p><%= tagline %></p>
+    <ul>
+        <% files.forEach(function(file) { %>
+            <li>
+                <a href="/videos/<%= file %>"><strong><%= file %></strong></a>
+            </li>
+        <% }); %>
+    </ul>
+</html>

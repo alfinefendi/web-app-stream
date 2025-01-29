@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../partials/head'); %>
+</head>
+<body>
+<header>
+    <%- include('../partials/header'); %>
+</header>
+<main class="text-xs text-gray-600 bg-white">
+    <div id="container" class="p-2 px-4">
+        <div class="flex justify-between gap-4 space-x-4">
+            <!-- <div class="bg-blue-50 p-2 rounded w-full h-40"></div> -->
+            <div class="w-full">
+                <video class="w-full rounded shadow-md" id="videoPlayer" controls></video>
+                <div class="mt-2">
+                    <p>uploaded by @fahmi231</p>
+                    <h1 class="text-gray-800 font-bold text-3xl">Streaming video, <%= id %></h1>
+                    <div class="mt-5">
+                        <div id="log"></div>
+                    </div>
+                </div>
+                <div class="mt-4 flex flex-col gap-2">
+                    <label for="comment">leave a comment</label>
+                    <input type="text" placeholder="Comment" class="bg-white rounded p-2 px-3 border border-gray-200 w-full outline-none">    
+                </div>    
+                <div class="flex flex-col gap-2 mt-4">
+                    <div class="bg-gray-50 border border-gray-100 p-2 rounded">
+                        <div class="flex gap-2">
+                            <div class="size-6 flex justify-center items-center rounded-full bg-gray-300"></div>
+                            <div>
+                                <p>user1293</p>
+                                <p>nihao, Lorem ipsum dolor sit amet consectetur, adipisicing elit. Dolorum velit animi dolores odio totam quod eligendi nesciunt qui. Ipsa, numquam dicta.</p>
+                                <div class="flex gap-2 mt-2">
+                                    <a href="#" class="text-blue-600">Reply</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 border border-gray-100 p-2 rounded">
+                        <div class="flex gap-2">
+                            <div class="size-6 flex justify-center items-center rounded-full bg-gray-300"></div>
+                            <div>
+                                <p>user1293</p>
+                                <p>nihao, Lorem ipsum dolor sit amet consectetur, adipisicing elit. Dolorum velit animi dolores odio totam quod eligendi nesciunt qui. Ipsa, numquam dicta.</p>
+                                <div class="flex gap-2 mt-2">
+                                    <a href="#" class="text-blue-600">Reply</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            <div class="">
+                <div class="flex flex-col gap-2 bg-gray-50 p-2">
+                    <div class="bg-white p-2 rounded">    
+                        <div class="bg-gray-50 rounded p-2 w-full h-36"></div>
+                        <h4 class="text-gray-700 text-sm">Lorem, ipsum dolor.</h4>
+                        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Praesentium, tempore..</p>
+                        <p>a &mdash; b </p>
+                    </div>
+                    <div class="bg-white p-2 rounded">    
+                        <div class="bg-gray-50 rounded p-2 w-full h-36"></div>
+                        <h4 class="text-gray-700 text-sm">Lorem, ipsum dolor.</h4>
+                        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Praesentium, tempore..</p>
+                        <p>a &mdash; b </p>
+                    </div>
+                    <div class="bg-white p-2 rounded">    
+                        <div class="bg-gray-50 rounded p-2 w-full h-36"></div>
+                        <h4 class="text-gray-700 text-sm">Lorem, ipsum dolor.</h4>
+                        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Praesentium, tempore..</p>
+                        <p>a &mdash; b </p>
+                    </div>
+                    <div class="bg-white p-2 rounded">    
+                        <div class="bg-gray-50 rounded p-2 w-full h-36"></div>
+                        <h4 class="text-gray-700 text-sm">Lorem, ipsum dolor.</h4>
+                        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Praesentium, tempore..</p>
+                        <p>a &mdash; b </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+      
+    </div>
+</main>
+
+
+
+
+<footer class="p-4">
+<%- include('../partials/footer'); %>
+</footer>
+  <script>
+    const player = dashjs.MediaPlayer().create();
+    console.log(player);
+    const videoElement = document.getElementById('videoPlayer');
+    const manifestUrl = '/videos/<%= id %>/manifest.mpd';
+    console.log(manifestUrl);
+    
+    player.initialize(videoElement, manifestUrl, true);
+    const originalXHR = window.XMLHttpRequest;
+    console.log(originalXHR);
+
+    window.XMLHttpRequest = function() {
+            const xhr = new originalXHR();
+            
+            // Intercept the `open` method to log request details
+            const originalOpen = xhr.open;
+            xhr.open = function(method, url, async, user, password) {
+                this._method = method;
+                this._url = url;
+                console.log(`Opening XHR request: ${method} ${url}`);
+                return originalOpen.apply(this, arguments);
+            };
+
+            // Intercept the `send` method to log when the request is sent
+            const originalSend = xhr.send;
+            xhr.send = function(body) {
+                const logDiv = document.getElementById('log');
+                logDiv.innerHTML += `<p>Sending XHR request to: ${this._url} (Method: ${this._method})</p>`;
+                return originalSend.apply(this, arguments);
+            };
+
+            // Intercept the `onload` method to log when the request is completed
+            xhr.onload = function() {
+                const logDiv = document.getElementById('log');
+                const status = xhr.status;
+                const statusText = xhr.statusText;
+                const responseText = xhr.responseText;
+
+                logDiv.innerHTML += `<p>XHR request to ${xhr._url} completed. Status: ${status} ${statusText}</p>`;
+                logDiv.innerHTML += `<p>Response Size: ${xhr.responseText.length} characters</p>`;
+            };
+
+            // Intercept the `onerror` method to log errors
+            xhr.onerror = function() {
+                const logDiv = document.getElementById('log');
+                logDiv.innerHTML += `<p>Error occurred with XHR request to: ${xhr._url}</p>`;
+            };
+
+            return xhr;
+        };
+
+        // Example of making an XHR request
+        function makeXHRRequest() {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', 'https://jsonplaceholder.typicode.com/posts/1', true);
+            xhr.send();
+        }
+
+        // Trigger an example XHR request
+        makeXHRRequest();
+    
+  </script>
+</body>
+</html>
