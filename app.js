@@ -1,35 +1,49 @@
-const path = require('path');
-const fs = require('fs')
 const express = require("express")
+const env = require("dotenv").config().parsed
+const fs = require('fs')
+const path = require('path')
 const app = express()
-const host = '192.168.1.6'
-const port = 3000
+const host = env.HOST
+const port = env.PORT
 
 
 // media file
 app.use(express.static(path.join(__dirname, 'public')))
 app.set('view engine', 'ejs')
 
-
-
-const fileNames = [];
-const directoryPath = path.join(__dirname, 'public/videos')
-fs.readdir(directoryPath, (err,files) => {
-    if(err) {
-        return console.log(`Unable to scan directory: ${err}`);
+const childDirectory = []
+const storage = env.DST_PATH
+const lookup = async (params) => {
+    if(!fs.existsSync(params)) {
+        return console.error('error: ' + params)
+    } else {
+        const directoryPath = path.join(__dirname, params)
+        fs.readdir(directoryPath, (err,files) => {
+            if(err) {
+                return console.log(`unable to scan directory: ${err}`);
+            } 
+            console.log('read directory ok: ' + params);
+            if(files.length) {
+                files.forEach((file) => {
+                    childDirectory.push(file);
+                    console.log('directory child: ' + childDirectory);
+                })
+            }
+        })
     }
-    files.forEach((file) => {
-        fileNames.push(file);
-    })
-})
+}
+
+lookup(storage);
+
+
+
 
 
 app.get("/", (req,res) => {
     res.render('pages/videos',{
         "tagline": "videos",
-        "files": fileNames
+        "files": childDirectory
     })
-    // res.sendFile(path.join(__dirname,'public', 'index.html'))
 })
 
 
@@ -37,12 +51,11 @@ app.get("/", (req,res) => {
 app.get("/videos", (req,res) => {
     res.render('pages/videos',{
         "tagline": "videos",
-        "files": fileNames
+        "files": childDirectory
     })
 })
 
 app.get("/videos/:id", (req,res) => {
-    // res.send(req.params.id)
     res.render('pages/play-video',{
         "id" : req.params.id
     })
@@ -50,5 +63,5 @@ app.get("/videos/:id", (req,res) => {
 
 
 app.listen(port,host, () => {
-    console.log(`Example app listening on  ${host}:${port}`);
+    console.log(`app run on  ${host}:${port}`);
 })

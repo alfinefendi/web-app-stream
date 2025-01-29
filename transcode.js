@@ -1,37 +1,113 @@
+const env = require("dotenv").config().parsed
+const ffmpeg = require('fluent-ffmpeg')
+const fs = require('fs')
+const path = require('path')
 
-const ffmpegStatic = require('ffmpeg-static');
-const ffmpeg = require('fluent-ffmpeg');
+// alteratif ketika malas untuk tentukan bin direktori ffmpeg
+// const ffmpegStatic = require('ffmpeg-static')
 
-ffmpeg.setFfmpegPath(ffmpegStatic);
-
-const inputPath = 'obs.mp4';
-const outputPath = 'dash_output/output.mpd';
+const directoryOutput = `${env.DST_PATH}/${env.VIDEO_NAME}`
+const srcInputVideo = `${env.SRC_PATH}/${env.VIDEO_NAME}.${env.VIDEO_PREFIX}`;
+const dstOutputVideo = `${env.DST_PATH}/${env.VIDEO_NAME}/${env.MANIFEST_MPD}`;
 const scaleOptions = ['scale=1280:720', 'scale=640:320'];
 const videoCodec = 'libx264';
 const x264Options = 'keyint=24:min-keyint=24:no-scenecut';
 const videoBitrates = ['1000k', '2000k', '4000k'];
 
-ffmpeg()
-  .input(inputPath)
-  .videoFilters(scaleOptions)
-  .videoCodec(videoCodec)
-  .addOption('-x264opts', x264Options)
-  .outputOptions('-b:v', videoBitrates[0])
-  .format('dash')
-  .output(outputPath)
-  .on('end', () => {
-    console.log('DASH encoding complete.');
-  })
-  .on('error', (err) => {
-    console.error('Error:', err.message);
-  })
-  .run();
 
-// const Ffmpeg = require('fluent-ffmpeg');
-// const path = require('path');
-// const fs = require('fs')
-// const execSync = require('child_process').execSync;
+const createFolder = async (params, callback) => {
+    if(fs.existsSync(params)) {
+        console.log(`${params} directory is already exists, skip create a folder`)
+    }  else {
+        fs.mkdir(params, {recursive: true}, (err)=>{
+            if(err) {
+                console.log('failed to create directory: ' + params)
+                return console.error(err)
+            } else {
+                console.log('succes create directory: ' + params)  
+            }
+        })
+    }
 
+    callback(params)
+ 
+
+}
+
+const readFolder = async (params) => {
+    if(!fs.existsSync(params)) {
+        return console.log('message: ' + params)
+    } else {
+        const directoryPath = path.join(__dirname, params)
+        fs.readdir(directoryPath, (err,files) => {
+            if(err) {
+                return console.log(`unable to scan directory: ${err}`);
+            } 
+            console.log('already exists: ' + params);
+            if(files.length) {
+                files.forEach((file) => {
+                    console.log(file);
+                    
+                    const filePath = path.join(params, file);
+                    fs.unlink(filePath,(err)=>{
+                        if(err) {
+                            return console.log(err);
+                        }
+                        console.log(`re-set file: ${filePath}`);
+                    });
+                })
+            }
+            transcoding()
+        })
+    }
+}
+
+createFolder(directoryOutput,readFolder)
+
+
+async function transcoding() {
+    // ffmpeg.setFfmpegPath(ffmpegStatic);
+    ffmpeg.setFfmpegPath(env.FFMPEG_BIN);
+    ffmpeg(srcInputVideo)
+    .videoFilters(scaleOptions)
+    .videoCodec(videoCodec)
+    .addOption('-x264opts', x264Options)
+    .outputOptions('-b:v', videoBitrates[0])
+    .format('dash')
+    .output(dstOutputVideo)
+    .on('start', (commandLine) => {
+        console.log('Starting DASH transcoding...');
+        console.log('FFmpeg command: ', commandLine);
+    })
+    .on('progress', (progress) => {
+        console.log(`progress : ${progress.frames} frame`)
+    })
+    .on('error', (err,stdout,stderr) => {
+        console.error('Error:', err.message)
+        console.error('FFmpeg stdout:', stdout)
+        console.error('FFmpeg stderr:', stderr)
+    })
+    .run();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
 // const inputVideo = 'repo/obs.mp4';
 // const folderName = path.basename(inputVideo, path.extname(inputVideo))
 // const folderPath = path.join('public', 'videos', folderName);
