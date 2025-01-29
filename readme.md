@@ -4,7 +4,7 @@ nodejs
 
 #step
 npm install
-node transcode
+node transcode 2x, karena folder public masih belum terbuat
 node app
 
 #note
